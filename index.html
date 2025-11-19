@@ -20,7 +20,8 @@
     .btn:hover{transform:translateY(-1px);box-shadow:0 0 24px rgba(108,249,255,.35)}
     .layout-left{grid-area:left;display:flex;flex-direction:column;gap:12px;min-height:0}
     .panel{background:var(--panel);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;box-shadow:0 0 20px rgba(157,108,255,.10), inset 0 0 16px rgba(255,255,255,.02)}
-    .periodic-panel{flex:1 1 0; overflow:auto}
+    .periodic-panel{flex:1 1 0; overflow:auto; position:relative; -webkit-overflow-scrolling:touch}
+    .periodic-controls{position:sticky;top:0;z-index:10;background:rgba(18,26,40,.92);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border-bottom:1px solid rgba(255,255,255,.08);padding:8px 10px;margin:-14px -14px 10px -14px}
     .panel-title{position:relative;z-index:2;font-weight:700;margin-bottom:10px;color:var(--muted);letter-spacing:.3px;white-space:nowrap;font-size:clamp(14px,1.8vw,18px)}
     .ptable{display:grid;grid-template-columns:repeat(18, minmax(24px, 1fr));grid-auto-rows:50px;gap:6px;min-height:0}
     .cell{position:relative;background:rgba(255,255,255,.03);border:1px solid rgba(157,108,255,.3);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background-color 300ms ease, border-color 300ms ease, box-shadow 300ms ease;border-width:1px}
@@ -70,8 +71,19 @@
     .arrows path{ transition: stroke 250ms ease; will-change: stroke; }
     .arrows path.active-arrow{ stroke:#fff; }
     @media (max-width:1100px){.app{grid-template-columns:1fr;grid-template-rows:auto auto 1fr;grid-template-areas:"header" "left" "right"}}
-    @media (max-width:900px){.periodic-panel{overflow:auto}.ptable{transform:scale(.95);transform-origin:top left}}
-    @media (max-width:720px){.periodic-panel{overflow:auto}.ptable{transform:scale(.85);transform-origin:top left}}
+    @media (max-width:900px){
+      .periodic-panel{overflow:auto}
+      .ptable{transform:scale(.9);transform-origin:top left;grid-auto-rows:46px}
+    }
+    @media (max-width:720px){
+      .periodic-panel{overflow:auto}
+      .ptable{transform:scale(.78);transform-origin:top left;grid-auto-rows:44px}
+      .app{padding:12px}
+    }
+    @media (max-width:480px){
+      .ptable{transform:scale(.72);transform-origin:top left;grid-auto-rows:42px}
+      .header-actions .btn{padding:6px 10px}
+    }
   </style>
 </head>
 <body>
@@ -88,7 +100,7 @@
     <div class="layout-left">
       <div class="panel periodic-panel">
         <div class="panel-title">元素选择器（仅通过点击周期表选择）</div>
-        <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+        <div class="periodic-controls" style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
           <label class="btn" style="display:flex;gap:6px;align-items:center">
             <span>搜索</span>
             <input id="searchBox" type="text" placeholder="符号或原子序数" style="width:160px;background:transparent;border:none;color:var(--text)" />
