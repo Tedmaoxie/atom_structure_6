@@ -10,7 +10,9 @@ function zToGroup(z){const p=zToPeriod(z);if(p===1)return periodSeq[1][z-1];if(p
 const ptableEl=document.getElementById('ptable');
 let ptableCells=[]; let selectedElements=[]; let multiSelect=false; let elementQueue=[]; let demoLockedHighlight=false;
 document.getElementById('multiToggle')?.addEventListener('change',e=>{ multiSelect = !!e.target.checked; if(!multiSelect){ selectedElements=[]; updateSelectionVisual(); }});
-ptableEl.style.gridTemplateRows=`repeat(9,50px)`;
+function setGridRows(){ const w = window.innerWidth; const px = w<=480 ? 42 : (w<=720 ? 44 : (w<=900 ? 46 : 50)); ptableEl.style.gridTemplateRows = `repeat(9,${px}px)`; }
+setGridRows();
+window.addEventListener('resize', setGridRows);
 for(let z=1;z<=118;z++){
   const cell=document.createElement('div');
   const period=zToPeriod(z); const group=zToGroup(z);
