@@ -73,15 +73,15 @@
     @media (max-width:1100px){.app{grid-template-columns:1fr;grid-template-rows:auto auto 1fr;grid-template-areas:"header" "left" "right"}}
     @media (max-width:900px){
       .periodic-panel{overflow:auto}
-      .ptable{transform:scale(.9);transform-origin:top left;grid-auto-rows:46px}
+      .ptable{transform:scale(.9);transform-origin:top left;grid-auto-rows:46px;grid-template-rows:repeat(9,46px) !important}
     }
     @media (max-width:720px){
       .periodic-panel{overflow:auto}
-      .ptable{transform:scale(.78);transform-origin:top left;grid-auto-rows:44px}
+      .ptable{transform:scale(.78);transform-origin:top left;grid-auto-rows:44px;grid-template-rows:repeat(9,44px) !important}
       .app{padding:12px}
     }
     @media (max-width:480px){
-      .ptable{transform:scale(.72);transform-origin:top left;grid-auto-rows:42px}
+      .ptable{transform:scale(.72);transform-origin:top left;grid-auto-rows:42px;grid-template-rows:repeat(9,42px) !important}
       .header-actions .btn{padding:6px 10px}
     }
   </style>
