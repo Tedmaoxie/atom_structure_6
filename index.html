@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f1a" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="原子电子轨道与能级填充可视化演示（三维体渲染）" />
+  <title>原子电子轨道与能级填充演示</title>
+  <style>
+    :root{--bg:#0b0f1a;--panel:#121826;--text:#e6f1ff;--muted:#7b88a8;--neon1:#6cf9ff;--neon2:#9d6cff;--neon3:#4aff7a;--danger:#ff5c8a;--accent:#33d1ff;--zone-s-bg:rgba(179,229,252,0.20);--zone-p-bg:rgba(200,230,201,0.20);--zone-d-bg:rgba(255,224,178,0.20);--zone-ds-bg:rgba(255,205,210,0.20);--zone-f-bg:rgba(225,190,231,0.20)}
+    *{box-sizing:border-box}
+    html,body{height:100%;background:radial-gradient(1200px at 70% 20%,#0f1a2b 20%, #0b0f1a 60%);color:var(--text);font-family:Segoe UI, Helvetica, Arial, sans-serif;margin:0;overflow-x:hidden}
+    .app{display:grid;grid-template-columns:600px 1fr;grid-template-rows:auto 1fr;grid-template-areas:"header header" "left right";height:100%;gap:16px;padding:16px}
+    header{grid-area:header;background:linear-gradient(90deg,rgba(157,108,255,.2),rgba(108,249,255,.2));border:1px solid rgba(108,249,255,.25);border-radius:12px;padding:14px 18px;box-shadow:0 0 32px rgba(157,108,255,.12), inset 0 0 24px rgba(108,249,255,.08);display:flex;align-items:center;justify-content:space-between;min-width:0}
+    header .title{flex:1 1 auto;min-width:0;font-size:clamp(16px, 2.2vw, 20px);font-weight:700;letter-spacing:.5px;text-shadow:0 0 12px var(--neon2);white-space:nowrap}
+    .header-actions{display:flex;gap:10px;flex-shrink:0;flex-wrap:wrap}
+    .btn{background:rgba(255,255,255,.04);border:1px solid rgba(108,249,255,.35);color:var(--text);padding:8px 12px;border-radius:10px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);cursor:pointer;transition:.2s;box-shadow:0 0 16px rgba(108,249,255,.15)}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 0 24px rgba(108,249,255,.35)}
+    .layout-left{grid-area:left;display:flex;flex-direction:column;gap:12px;min-height:0}
+    .panel{background:var(--panel);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;box-shadow:0 0 20px rgba(157,108,255,.10), inset 0 0 16px rgba(255,255,255,.02)}
+    .periodic-panel{flex:1 1 0; overflow:auto}
+    .panel-title{position:relative;z-index:2;font-weight:700;margin-bottom:10px;color:var(--muted);letter-spacing:.3px;white-space:nowrap;font-size:clamp(14px,1.8vw,18px)}
+    .ptable{display:grid;grid-template-columns:repeat(18, minmax(24px, 1fr));grid-auto-rows:50px;gap:6px;min-height:0}
+    .cell{position:relative;background:rgba(255,255,255,.03);border:1px solid rgba(157,108,255,.3);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background-color 300ms ease, border-color 300ms ease, box-shadow 300ms ease;border-width:1px}
+    .cell:hover{border-color:var(--neon1);box-shadow:0 0 12px rgba(108,249,255,.4)}
+    .cell.selected{border-color:#1E90FF;border-width:2px;box-shadow:0 0 12px rgba(30,144,255,.35)}
+    .cell.selected[data-zone="s"]{background:var(--zone-s-bg)}
+    .cell.selected[data-zone="p"]{background:var(--zone-p-bg)}
+    .cell.selected[data-zone="d"]{background:var(--zone-d-bg)}
+    .cell.selected[data-zone="ds"]{background:var(--zone-ds-bg)}
+    .cell.selected[data-zone="f"]{background:var(--zone-f-bg)}
+    .cell.filtered-out{opacity:.28}
+    .sym{font-weight:700}
+    .num{position:absolute;top:4px;left:6px;font-size:11px;color:var(--muted)}
+    .lanth,.actin{grid-column:3 / span 15}
+    .legend{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:12px}
+    .legend .dot{width:10px;height:10px;border-radius:50%;margin-right:6px;display:inline-block}
+    .tooltip{position:fixed;pointer-events:none;background:rgba(12,18,30,.86);border:1px solid rgba(108,249,255,.35);color:#e6f1ff;padding:8px 10px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:14px;z-index:9999;opacity:0;transition:opacity .12s}
+    .orbit-pop{position:fixed;background:rgba(18,26,40,.95);border:1px solid rgba(157,108,255,.35);color:#e6f1ff;padding:10px 12px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:9999;min-width:220px}
+    .orbit-pop h4{margin:0 0 8px 0;font-size:14px;color:#9fb0d0}
+    .orbit-pop .row{display:flex;gap:8px;flex-wrap:wrap}
+    .orbit-pop label{display:flex;gap:6px;align-items:center;background:rgba(255,255,255,.06);border:1px solid rgba(108,249,255,.25);padding:6px 8px;border-radius:8px;cursor:pointer}
+    /* 移除能级节点获得焦点时的默认白色方框，仅保留圆形高亮 */
+    svg .node:focus{outline:none}
+    svg .node:focus-visible{outline:none}
+    .node{-webkit-tap-highlight-color:rgba(0,0,0,0)}
+    .layout-right{grid-area:right;display:grid;grid-template-rows:340px 1fr;gap:12px}
+    .chart-wrap{display:flex;gap:12px;width:100%}
+    #energySvg{width:100%;height:320px;border-radius:10px;background:rgba(255,255,255,.02)}
+    #threeWrap{position:relative;height:100%;width:100%}
+    .panel-titlebar{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;margin-bottom:20px}
+    /* 配色控件纵向排布：文字横向显示并置于下拉框正上方，整体居中 */
+    .palette-wrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+    .palette-title{display:inline-block}
+    
+    canvas#three{width:100%;height:100%;display:block;border-radius:12px;background:radial-gradient(1000px at 60% 40%, #0f1628 30%, #0b0f1a 70%)}
+    .overlay-controls{position:absolute;top:48px;left:12px;right:12px;display:flex;gap:10px;flex-wrap:wrap;z-index:1}
+    .info{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+    .info .card{background:rgba(255,255,255,.03);border:1px solid rgba(108,249,255,.25);border-radius:10px;padding:8px}
+    .explain{font-size:13px;color:var(--muted);line-height:1.6}
+    /* 通过CSS选择器精确移除指定连接线的终点箭头（不改动线条本身） */
+    .arrows path[data-from="3d"][data-to="4p"],
+    .arrows path[data-from="4d"][data-to="5p"],
+    .arrows path[data-from="4f"][data-to="5d"],
+    .arrows path[data-from="5d"][data-to="6p"],
+    .arrows path[data-from="5f"][data-to="6d"]{ marker-end: none; }
+    /* 箭头颜色平滑过渡与白色高亮状态（中文注释） */
+    .arrows path{ transition: stroke 250ms ease; will-change: stroke; }
+    .arrows path.active-arrow{ stroke:#fff; }
+    @media (max-width:1100px){.app{grid-template-columns:1fr;grid-template-rows:auto auto 1fr;grid-template-areas:"header" "left" "right"}}
+    @media (max-width:900px){.periodic-panel{overflow:auto}.ptable{transform:scale(.95);transform-origin:top left}}
+    @media (max-width:720px){.periodic-panel{overflow:auto}.ptable{transform:scale(.85);transform-origin:top left}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title">原子电子轨道与能级填充演示 · Three.js + D3.js</div>
+      <div class="header-actions">
+        <button class="btn" id="btnStart">开始演示</button>
+        <button class="btn" id="btnStep">单步</button>
+        <button class="btn" id="btnPause">暂停</button>
+        <button class="btn" id="btnReset">重置</button>
+      </div>
+    </header>
+    <div class="layout-left">
+      <div class="panel periodic-panel">
+        <div class="panel-title">元素选择器（仅通过点击周期表选择）</div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+          <label class="btn" style="display:flex;gap:6px;align-items:center">
+            <span>搜索</span>
+            <input id="searchBox" type="text" placeholder="符号或原子序数" style="width:160px;background:transparent;border:none;color:var(--text)" />
+          </label>
+          <button class="btn" id="clearFilter">清除筛选</button>
+          <span class="legend">
+            <span><span class="dot" style="background:#4aff7a"></span>s 区</span>
+            <span><span class="dot" style="background:#33d1ff"></span>p 区</span>
+            <span><span class="dot" style="background:#ff5c8a"></span>d 区</span>
+            <span><span class="dot" style="background:#ffa56b"></span>ds 区</span>
+            <span><span class="dot" style="background:#9d6cff"></span>f 区</span>
+          </span>
+        </div>
+        <div id="ptable" class="ptable"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">演示说明与量子数</div>
+        <div class="info" style="font-size:14px;line-height:1;white-space:nowrap">
+          <div class="card">能层(n)：<span id="q_n">-</span></div>
+          <div class="card">能级(l)：<span id="q_l">-</span></div>
+          <div class="card">轨道名称：<span id="q_orb">-</span></div>
+          <div class="card">自旋状态：<span id="q_s">-</span></div>
+        </div>
+        <div class="explain" id="explain">选择一个元素后，点击“开始演示”，系统将按构造原理（n+l 规则与 n 次序）、洪特规则与 Pauli 不相容原理进行电子填充动画。能级图与 3D 轨道形状联动展示。</div>
+      </div>
+    </div>
+    <div class="layout-right">
+      <div class="panel chart-wrap">
+        <div class="panel-titlebar">
+          <div class="panel-title">能级图（K-Q，D3.js）</div>
+          <!-- 布局调整：将“能层配色”横向四字放置在下拉框正上方 -->
+          <label class="btn palette-wrap">
+            <span class="palette-title">能层配色</span>
+            <select id="rowPalette" title="能层配色方案" aria-label="能层配色方案" style="min-width:160px"></select>
+          </label>
+        </div>
+        <svg id="energySvg"></svg>
+      </div>
+      <div class="panel" id="threeWrap">
+        <div class="panel-title">量子轨道可视化（几何模式）</div>
+        <div class="overlay-controls">
+          <label class="btn" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="showAxes" checked> 显示坐标轴</label>
+          <label class="btn" style="display:flex;gap:6px;align-items:center">速度
+            <select id="rotSpeed">
+              <option value="slow">慢</option>
+              <option value="medium" selected>中</option>
+              <option value="fast">快</option>
+            </select>
+          </label>
+          <label class="btn" style="display:flex;gap:6px;align-items:center">轴
+            <label><input type="checkbox" id="rotX"> X</label>
+            <label><input type="checkbox" id="rotY"> Y</label>
+            <label><input type="checkbox" id="rotZ"> Z</label>
+          </label>
+          <button class="btn" id="rotReset">重置旋转</button>
+        </div>
+        <canvas id="three"></canvas>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./scripts/main.js?v=20251117"></script>
+</body>
+</html>
