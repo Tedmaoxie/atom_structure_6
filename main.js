@@ -1,6 +1,28 @@
-import * as THREE from 'https://esm.sh/three@0.160.0';
-import { OrbitControls } from 'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
+// 移动网络兼容：多 CDN + 本地回退加载 three / OrbitControls / d3（中文注释）
+async function loadLibs(){
+  const tryImport = async (urls)=>{ for(const u of urls){ try{ return await import(u); }catch(e){} } return null; };
+  const THREE_mod = await tryImport([
+    'https://esm.sh/three@0.160.0',
+    'https://unpkg.com/three@0.160.0/build/three.module.js',
+    './vendor/three.module.js'
+  ]);
+  const Orbit_mod = await tryImport([
+    'https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js',
+    'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js?module',
+    './vendor/OrbitControls.js'
+  ]);
+  let d3_mod = await tryImport([
+    'https://cdn.jsdelivr.net/npm/d3@7/+esm',
+    'https://unpkg.com/d3@7?module'
+  ]);
+  if(!d3_mod){
+    await new Promise((resolve,reject)=>{ const s=document.createElement('script'); s.src='./vendor/d3.min.js'; s.onload=resolve; s.onerror=reject; document.head.appendChild(s); });
+    d3_mod = window.d3;
+  }
+  if(!THREE_mod || !Orbit_mod || !d3_mod) throw new Error('Lib load failed');
+  return { THREE: THREE_mod, OrbitControls: (Orbit_mod.OrbitControls||Orbit_mod.default||Orbit_mod), d3: d3_mod };
+}
+const { THREE, OrbitControls, d3 } = await loadLibs();
 
 const symbols=[null,"H","He","Li","Be","B","C","N","O","F","Ne","Na","Mg","Al","Si","P","S","Cl","Ar","K","Ca","Sc","Ti","V","Cr","Mn","Fe","Co","Ni","Cu","Zn","Ga","Ge","As","Se","Br","Kr","Rb","Sr","Y","Zr","Nb","Mo","Tc","Ru","Rh","Pd","Ag","Cd","In","Sn","Sb","Te","I","Xe","Cs","Ba","La","Ce","Pr","Nd","Pm","Sm","Eu","Gd","Tb","Dy","Ho","Er","Tm","Yb","Lu","Hf","Ta","W","Re","Os","Ir","Pt","Au","Hg","Tl","Pb","Bi","Po","At","Rn","Fr","Ra","Ac","Th","Pa","U","Np","Pu","Am","Cm","Bk","Cf","Es","Fm","Md","No","Lr","Rf","Db","Sg","Bh","Hs","Mt","Ds","Rg","Cn","Nh","Fl","Mc","Lv","Ts","Og"];
 const periodSeq={1:[1,18],2:[1,2,13,14,15,16,17,18],3:[1,2,13,14,15,16,17,18],4:[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18],5:[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18],6:[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18],7:[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]};
