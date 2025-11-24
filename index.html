@@ -7,9 +7,9 @@
   <meta name="theme-color" content="#0b0f1a" />
   <meta name="color-scheme" content="dark" />
   <meta name="description" content="原子电子轨道与能级填充可视化演示（三维体渲染）" />
-  <title>原子电子轨道与能级填充演示</title>
+  <title>原子轨道与能级填充演示by实验中学</title>
   <style>
-    :root{--bg:#0b0f1a;--panel:#121826;--text:#e6f1ff;--muted:#7b88a8;--neon1:#6cf9ff;--neon2:#9d6cff;--neon3:#4aff7a;--danger:#ff5c8a;--accent:#33d1ff;--zone-s-bg:rgba(179,229,252,0.20);--zone-p-bg:rgba(200,230,201,0.20);--zone-d-bg:rgba(255,224,178,0.20);--zone-ds-bg:rgba(255,205,210,0.20);--zone-f-bg:rgba(225,190,231,0.20)}
+    :root{--bg:#0b0f1a;--panel:#121826;--text:#e6f1ff;--muted:#7b88a8;--neon1:#6cf9ff;--neon2:#9d6cff;--neon3:#4aff7a;--danger:#ff5c8a;--accent:#33d1ff;--zone-s-bg:rgba(179,229,252,0.20);--zone-p-bg:rgba(200,230,201,0.20);--zone-d-bg:rgba(255,224,178,0.20);--zone-ds-bg:rgba(255,205,210,0.20);--zone-f-bg:rgba(225,190,231,0.20);--ptable-scale:1;--right-shift:0px}
     *{box-sizing:border-box}
     html,body{height:100%;background:radial-gradient(1200px at 70% 20%,#0f1a2b 20%, #0b0f1a 60%);color:var(--text);font-family:Segoe UI, Helvetica, Arial, sans-serif;margin:0;overflow-x:hidden}
     .app{display:grid;grid-template-columns:600px 1fr;grid-template-rows:auto 1fr;grid-template-areas:"header header" "left right";height:100%;gap:16px;padding:16px}
@@ -20,10 +20,21 @@
     .btn:hover{transform:translateY(-1px);box-shadow:0 0 24px rgba(108,249,255,.35)}
     .layout-left{grid-area:left;display:flex;flex-direction:column;gap:12px;min-height:0}
     .panel{background:var(--panel);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;box-shadow:0 0 20px rgba(157,108,255,.10), inset 0 0 16px rgba(255,255,255,.02)}
-    .periodic-panel{flex:1 1 0; overflow:auto; position:relative; -webkit-overflow-scrolling:touch}
+    .periodic-panel{flex:1 1 0; width:100%; overflow:auto; position:relative; -webkit-overflow-scrolling:touch; z-index:10; box-sizing:border-box; scrollbar-gutter: stable both-edges; padding-inline-end: var(--sbw, 0px); transition: padding-inline-end .18s ease}
+    .periodic-panel::-webkit-scrollbar{width:12px;height:12px}
+    .periodic-panel::-webkit-scrollbar-track{background:transparent}
+    .periodic-panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,.20);border-radius:8px}
+    .periodic-panel::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.30)}
+    .periodic-panel{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.20) transparent}
+
+    .periodic-panel.scrollbar-overlay{scrollbar-width:none}
+    .periodic-panel.scrollbar-overlay::-webkit-scrollbar{width:0;height:0}
+    .scrollbar-track{position:absolute;right:2px;top:10%;height:80%;width:12px;border-radius:8px;background:transparent;pointer-events:none;z-index:20}
+    .scrollbar-thumb{position:absolute;right:2px;width:12px;min-height:40px;border-radius:8px;background:rgba(255,255,255,.20);pointer-events:auto;z-index:21;transition:background .15s ease}
+    .scrollbar-thumb:hover{background:rgba(255,255,255,.30)}
     .periodic-controls{position:sticky;top:0;z-index:10;background:rgba(18,26,40,.92);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border-bottom:1px solid rgba(255,255,255,.08);padding:8px 10px;margin:-14px -14px 10px -14px}
     .panel-title{position:relative;z-index:2;font-weight:700;margin-bottom:10px;color:var(--muted);letter-spacing:.3px;white-space:nowrap;font-size:clamp(14px,1.8vw,18px)}
-    .ptable{display:grid;grid-template-columns:repeat(18, minmax(24px, 1fr));grid-auto-rows:50px;gap:6px;min-height:0}
+    .ptable{display:grid;grid-template-columns:repeat(18, minmax(24px, 1fr));grid-auto-rows:50px;gap:6px;min-height:0;transform:scale(var(--ptable-scale));transform-origin:top left;will-change:transform;width:calc(100% / var(--ptable-scale));box-sizing:border-box}
     .cell{position:relative;background:rgba(255,255,255,.03);border:1px solid rgba(157,108,255,.3);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background-color 300ms ease, border-color 300ms ease, box-shadow 300ms ease;border-width:1px}
     .cell:hover{border-color:var(--neon1);box-shadow:0 0 12px rgba(108,249,255,.4)}
     .cell.selected{border-color:#1E90FF;border-width:2px;box-shadow:0 0 12px rgba(30,144,255,.35)}
@@ -47,10 +58,13 @@
     svg .node:focus{outline:none}
     svg .node:focus-visible{outline:none}
     .node{-webkit-tap-highlight-color:rgba(0,0,0,0)}
-    .layout-right{grid-area:right;display:grid;grid-template-rows:340px 1fr;gap:12px}
+    .layout-right{grid-area:right;display:grid;grid-template-rows:calc(340px * var(--ptable-scale)) 1fr;gap:12px;padding-top:var(--right-shift);transition:margin-top 0.3s ease}
+.layout-right.zoom-shifted{margin-top:500px}
     .chart-wrap{display:flex;gap:12px;width:100%}
-    #energySvg{width:100%;height:320px;border-radius:10px;background:rgba(255,255,255,.02)}
-    #threeWrap{position:relative;height:100%;width:100%}
+    #energySvg{width:100%;height:calc(320px * var(--ptable-scale));min-height:clamp(288px, 34vh, 560px);border-radius:10px;background:rgba(255,255,255,.02);position:relative;z-index:0;margin-bottom:20px}
+    /* 固定显示：浏览器放大≥125%时将能级图固定在右上角，限制最大尺寸，保持交互（中文注释） */
+    #energySvg.energy-fixed{position:fixed;top:20px;right:20px;width:min(30vw, 640px);height:min(40vh, 480px);max-width:30vw;max-height:40vh;border-radius:10px;z-index:0}
+    #threeWrap{position:relative;height:100%;width:100%;min-height:clamp(360px, 40vh, 720px);margin-bottom:20px}
     .panel-titlebar{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;margin-bottom:20px}
     /* 配色控件纵向排布：文字横向显示并置于下拉框正上方，整体居中 */
     .palette-wrap{display:flex;flex-direction:column;align-items:center;gap:6px}
@@ -73,23 +87,30 @@
     @media (max-width:1100px){.app{grid-template-columns:1fr;grid-template-rows:auto auto 1fr;grid-template-areas:"header" "left" "right"}}
     @media (max-width:900px){
       .periodic-panel{overflow:auto}
-      .ptable{transform:scale(.9);transform-origin:top left;grid-auto-rows:46px;grid-template-rows:repeat(9,46px) !important}
+      :root{ --ptable-scale:.9 }
+      .ptable{grid-auto-rows:46px;grid-template-rows:repeat(9,46px) !important}
     }
     @media (max-width:720px){
       .periodic-panel{overflow:auto}
-      .ptable{transform:scale(.78);transform-origin:top left;grid-auto-rows:44px;grid-template-rows:repeat(9,44px) !important}
+      :root{ --ptable-scale:.78 }
+      .ptable{grid-auto-rows:44px;grid-template-rows:repeat(9,44px) !important}
       .app{padding:12px}
     }
     @media (max-width:480px){
-      .ptable{transform:scale(.72);transform-origin:top left;grid-auto-rows:42px;grid-template-rows:repeat(9,42px) !important}
+      :root{ --ptable-scale:.72 }
+      .ptable{grid-auto-rows:42px;grid-template-rows:repeat(9,42px) !important}
       .header-actions .btn{padding:6px 10px}
+    }
+    @media (max-width:360px){
+      :root{ --ptable-scale:.68 }
+      .ptable{grid-auto-rows:40px;grid-template-rows:repeat(9,40px) !important}
     }
   </style>
 </head>
 <body>
   <div class="app">
     <header>
-      <div class="title">原子电子轨道与能级填充演示 · Three.js + D3.js</div>
+      <div class="title">原子轨道与能级填充演示by实验中学 · Three.js + D3.js</div>
       <div class="header-actions">
         <button class="btn" id="btnStart">开始演示</button>
         <button class="btn" id="btnStep">单步</button>
